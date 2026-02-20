@@ -1,61 +1,234 @@
-About: Python 3.11 + GGUF MiniLM Manager Script
+#!/bin/bash
+# ===============================================
+# Python 3.11 + GGUF MiniLM Manager (ALL-IN-ONE)
+# Raspberry Pi / Ubuntu 25.10
+# ===============================================
 
-Script Name: Python 3.11 + GGUF MiniLM Manager (ALL-IN-ONE)
-Platform: Raspberry Pi / Ubuntu 25.10
-Purpose: Simplify the setup, installation, and management of Python 3.11 and local MiniLM models (GGUF format) for AI inference.
+set -e
 
-Features:
+# ---------------------------
+# Colors
+# ---------------------------
+GREEN="\e[32m"
+RED="\e[31m"
+YELLOW="\e[33m"
+RESET="\e[0m"
 
-System-wide Python 3.11 Installation:
+# ---------------------------
+# Variables
+# ---------------------------
+PYTHON_VERSION=3.11.10
+PYTHON_SRC_DIR=/usr/src/Python-$PYTHON_VERSION
+MODEL_DIR=/opt/minilm
+GGUF_MODEL=all-MiniLM-L6-v2-Q4_K_M.gguf
+REPORT_FILE=/tmp/setup_report.txt
 
-Downloads, compiles, and installs Python 3.11.10 from source.
+# Init report
+echo "Setup report:" > $REPORT_FILE
 
-Ensures pip and essential Python tools (setuptools, wheel) are upgraded.
+# ---------------------------
+# Reporting functions
+# ---------------------------
+report_success() { echo -e "${GREEN}✅ $1${RESET}"; echo "SUCCESS: $1" >> $REPORT_FILE; }
+report_fail()    { echo -e "${RED}❌ $1${RESET}"; echo "FAIL: $1" >> $REPORT_FILE; }
 
-Allows safe rollback to the original system Python.
+run_step() {
+    STEP_NAME="$1"
+    COMMAND="$2"
+    echo -e "${YELLOW}==> $STEP_NAME...${RESET}"
+    if eval "$COMMAND"; then
+        report_success "$STEP_NAME"
+    else
+        report_fail "$STEP_NAME"
+    fi
+}
 
-GGUF MiniLM Model Management:
+# ---------------------------
+# MENU
+# ---------------------------
+echo -e "${YELLOW}=====================================${RESET}"
+echo -e "${YELLOW} Python + GGUF MiniLM Manager${RESET}"
+echo -e "${YELLOW}=====================================${RESET}"
+echo "1) Install Python 3.11 (system-wide)"
+echo "2) Rollback to system Python"
+echo "3) Install MiniLM GGUF model + test"
+echo "4) Usage instructions"
+echo "5) How to use the MiniLM GGUF model with OpenClaw"
+echo "6) Validate if MiniLM model is working"
+echo "7) Recommendation / suggestion"
+echo "8) Clean up temporary files / apt cache"
+echo
+read -p "Choose option [1-8]: " CHOICE
 
-Downloads the quantized GGUF MiniLM model all-MiniLM-L6-v2-Q4_K_M.
+# =========================================================
+# OPTION 1: INSTALL PYTHON 3.11
+# =========================================================
+if [ "$CHOICE" = "1" ]; then
+    run_step "Installing build dependencies" \
+    "apt update -y 2>/dev/null || true && apt upgrade -y && apt install -y build-essential wget curl libffi-dev libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev libncurses5-dev libncursesw5-dev xz-utils tk-dev liblzma-dev libgdbm-dev libnss3-dev libgdbm-compat-dev python3-distutils"
 
-Tests the model locally using the gf library to verify embeddings.
+    run_step "Downloading Python $PYTHON_VERSION" \
+    "cd /usr/src && wget -q -N https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz"
 
-Provides YAML integration example for OpenClaw local memory search.
+    run_step "Extracting Python source" \
+    "cd /usr/src && tar xvf Python-$PYTHON_VERSION.tgz"
 
-Model Validation:
+    run_step "Compiling Python (this takes time)" \
+    "cd $PYTHON_SRC_DIR && ./configure --enable-optimizations --with-ensurepip=install && make -j4 && make altinstall"
 
-Option to validate MiniLM embeddings directly from the terminal.
+    run_step "Backing up system python" \
+    "cp /usr/bin/python3 /usr/bin/python3.bak 2>/dev/null || true"
 
-System Safety & Reporting:
+    run_step "Switching system Python to 3.11" \
+    "ln -sf /usr/local/bin/python3.11 /usr/bin/python3"
 
-Uses SSH-safe ✅ checkmarks and ❌ crosses for step success/failure reporting.
+    run_step "Ensure pip for Python 3.11" \
+    "python3 -m ensurepip --upgrade"
 
-Generates a /tmp/setup_report.txt summarizing all steps.
+    run_step "Upgrade pip globally" \
+    "python3 -m pip install --upgrade pip setuptools wheel"
 
-Cleanup:
+    run_step "Verify Python version" \
+    "python3 --version"
 
-Removes temporary build files, Python source archives, and cleans apt cache.
+    echo -e "${GREEN}Python 3.11 is now system default${RESET}"
 
-System helpers are preserved to avoid breaking command-not-found or other essential utilities.
+# =========================================================
+# OPTION 2: ROLLBACK
+# =========================================================
+elif [ "$CHOICE" = "2" ]; then
+    run_step "Restoring original python" \
+    "ln -sf /usr/bin/python3.bak /usr/bin/python3 2>/dev/null || true"
 
-Recommendations:
+    run_step "Verify rollback" \
+    "python3 --version"
 
-Designed for Raspberry Pi 4 or similar low-memory ARM boards.
+    echo -e "${GREEN}System Python restored${RESET}"
 
-Uses local INT4 quantized GGUF model for efficient CPU inference.
+# =========================================================
+# OPTION 3: INSTALL GGUF MODEL + TEST
+# =========================================================
+elif [ "$CHOICE" = "3" ]; then
+    run_step "Installing Python packages globally (gf, numpy)" \
+    "python3 -m pip install --upgrade pip && python3 -m pip install gf numpy"
 
-Swap management is recommended for heavy compilation or AI workloads.
+    run_step "Creating model directory" \
+    "mkdir -p $MODEL_DIR"
 
-Usage:
+    run_step "Downloading GGUF MiniLM model" \
+    "cd $MODEL_DIR && wget -q -N https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/$GGUF_MODEL"
 
-Run the script via terminal:
+    echo -e "${YELLOW}==> Testing MiniLM GGUF model with gf...${RESET}"
 
-sudo bash setup_minilm.sh
+python3 <<END
+import gf
+import numpy as np
+import os
 
-Choose from menu options [1–8] to install Python, manage models, validate embeddings, or clean up.
+MODEL_DIR = "$MODEL_DIR"
+MODEL_FILE = os.path.join(MODEL_DIR, "$GGUF_MODEL")
 
-Target Users:
+try:
+    model = gf.load_model(MODEL_FILE)
+    embedding = model.encode("Hello from Raspberry Pi")
+    print(f"✅ GGUF MiniLM embedding shape: {embedding.shape}")
+except Exception as e:
+    print(f"❌ GGUF MiniLM test failed: {e}")
+    exit(1)
+END
 
-AI hobbyists, developers, and researchers running local inference on Raspberry Pi or Ubuntu ARM boards.
+    report_success "GGUF MiniLM download + test completed"
+    echo -e "${GREEN}GGUF model ready at: $MODEL_DIR/$GGUF_MODEL${RESET}"
+    echo -e "${YELLOW}OpenClaw YAML integration example:${RESET}"
+    echo "agents:"
+    echo "  defaults:"
+    echo "    memorySearch:"
+    echo "      provider: local"
+    echo "      localModelPath: $MODEL_DIR/$GGUF_MODEL"
 
-Anyone needing a simple, safe setup of Python + MiniLM GGUF models for local experiments.
+# =========================================================
+# OPTION 4: USAGE INSTRUCTIONS
+# =========================================================
+elif [ "$CHOICE" = "4" ]; then
+    echo -e "${YELLOW}Usage instructions:${RESET}"
+    echo "1) Install Python 3.11 (system-wide)"
+    echo "2) Rollback to previous system Python"
+    echo "3) Install GGUF MiniLM model and test"
+    echo "4) Show this usage information"
+    echo "5) How to integrate model with OpenClaw"
+    echo "6) Validate the model manually"
+    echo "7) Suggestions / recommendations"
+    echo "8) Clean up temporary files / apt cache"
+
+# =========================================================
+# OPTION 5: OPENCLAW INTEGRATION
+# =========================================================
+elif [ "$CHOICE" = "5" ]; then
+    echo -e "${YELLOW}OpenClaw memory search integration:${RESET}"
+    echo "Update your OpenClaw YAML config as follows:"
+    echo "agents:"
+    echo "  defaults:"
+    echo "    memorySearch:"
+    echo "      provider: local"
+    echo "      localModelPath: $MODEL_DIR/$GGUF_MODEL"
+
+# =========================================================
+# OPTION 6: VALIDATE MODEL
+# =========================================================
+elif [ "$CHOICE" = "6" ]; then
+    echo -e "${YELLOW}Validating MiniLM GGUF model embeddings...${RESET}"
+
+python3 <<END
+import gf
+import numpy as np
+import os
+
+MODEL_DIR = "$MODEL_DIR"
+MODEL_FILE = os.path.join(MODEL_DIR, "$GGUF_MODEL")
+
+try:
+    model = gf.load_model(MODEL_FILE)
+    embedding = model.encode("Validation test")
+    print(f"✅ Model validation successful, embedding length: {embedding.shape[0]}")
+except Exception as e:
+    print(f"❌ Model validation failed: {e}")
+END
+
+# =========================================================
+# OPTION 7: RECOMMENDATION / SUGGESTION
+# =========================================================
+elif [ "$CHOICE" = "7" ]; then
+    echo -e "${YELLOW}Recommendation / suggestion:${RESET}"
+    echo "- On Raspberry Pi 4, install Python 3.11 system-wide for best compatibility."
+    echo "- Avoid virtual environments unless isolating projects."
+    echo "- Use GGUF MiniLM model (INT4 quantized) for best CPU performance."
+    echo "- Always backup your system Python before replacing."
+    echo "- Test the model manually using option 6 before integrating with OpenClaw."
+    echo "- Keep /opt/minilm for all local models; avoids permission issues."
+    echo "- Use update-alternatives if you want multi-Python setup without removing system Python."
+
+# =========================================================
+# OPTION 8: CLEANUP TEMP FILES / CACHE
+# =========================================================
+elif [ "$CHOICE" = "8" ]; then
+    echo -e "${YELLOW}Cleaning up temporary files and apt cache...${RESET}"
+    run_step "Clean apt cache" "apt clean"
+    run_step "Remove /usr/src Python tarballs" "rm -f /usr/src/Python-$PYTHON_VERSION.tgz"
+    run_step "Remove extracted Python source folder" "rm -rf /usr/src/Python-$PYTHON_VERSION"
+    echo -e "${GREEN}Cleanup completed. System helpers are preserved.${RESET}"
+
+# =========================================================
+# INVALID OPTION
+# =========================================================
+else
+    echo -e "${RED}Invalid option${RESET}"
+    exit 1
+fi
+
+# ---------------------------
+# SUMMARY REPORT
+# ---------------------------
+echo
+echo -e "${YELLOW}===== SUMMARY =====${RESET}"
+cat $REPORT_FILE
+echo -e "${YELLOW}===================${RESET}"
