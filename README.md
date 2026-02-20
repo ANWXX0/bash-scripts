@@ -51,7 +51,7 @@ Usage:
 
 Run the script via terminal:
 
-sudo bash setup_minilm.sh
+sudo bash python3.11_gguf_minilm_manager.sh
 
 Choose from menu options [1–8] to install Python, manage models, validate embeddings, or clean up.
 
