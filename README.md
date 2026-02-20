@@ -10,4 +10,13 @@ bash scripts
 - Downloads, quantizes (INT8), and tests **MiniLM ONNX** for CPU/NEON-optimized embeddings
 - Provides **OpenClaw memorySearch integration** config examples
 - Includes model validation and system cleanup options
-- Generates
+
+options
+1) Install Python 3.11 (system-wide)
+2) Rollback to system Python
+3) Install MiniLM ONNX model + test (quantized)
+4) Usage instructions
+5) How to use the MiniLM model with OpenClaw
+6) Validate if MiniLM model is working
+7) Recommendation / suggestion
+8) Clean up temporary files / apt cache
