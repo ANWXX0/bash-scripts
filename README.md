@@ -1,22 +1,62 @@
-# bash-scripts
-bash scripts
-**py_manager.sh – Python 3.11 + MiniLM ONNX Manager for Raspberry Pi / Ubuntu**
+ 
+About: Python 3.11 + GGUF MiniLM Manager Script
 
-`py_manager.sh` is an all-in-one interactive shell script that automates installing and managing **Python 3.11** and a **quantized MiniLM ONNX sentence-embedding model** on Raspberry Pi or Ubuntu 25.10 systems. Through a simple menu, it can compile and set Python 3.11 as the system default, roll back to the previous Python, install and quantize the `all-MiniLM-L6-v2` ONNX model, validate embeddings, and print ready-to-use **OpenClaw YAML integration** snippets. It also includes cleanup utilities and safety checks (backups, validation steps, and a summary report) designed to make setting up local embedding search on low-power devices repeatable and hassle-free.
+Script Name: Python 3.11 + GGUF MiniLM Manager (ALL-IN-ONE)
+Platform: Raspberry Pi / Ubuntu 25.10
+Purpose: Simplify the setup, installation, and management of Python 3.11 and local MiniLM models (GGUF format) for AI inference.
 
-**Key features:**
-- Interactive menu for common tasks (install, rollback, model setup, validation, cleanup)
-- Compiles and installs **Python 3.11** system-wide with necessary build dependencies
-- Downloads, quantizes (INT8), and tests **MiniLM ONNX** for CPU/NEON-optimized embeddings
-- Provides **OpenClaw memorySearch integration** config examples
-- Includes model validation and system cleanup options
+Features:
 
-options
-1) Install Python 3.11 (system-wide)
-2) Rollback to system Python
-3) Install MiniLM ONNX model + test (quantized)
-4) Usage instructions
-5) How to use the MiniLM model with OpenClaw
-6) Validate if MiniLM model is working
-7) Recommendation / suggestion
-8) Clean up temporary files / apt cache
+System-wide Python 3.11 Installation:
+
+Downloads, compiles, and installs Python 3.11.10 from source.
+
+Ensures pip and essential Python tools (setuptools, wheel) are upgraded.
+
+Allows safe rollback to the original system Python.
+
+GGUF MiniLM Model Management:
+
+Downloads the quantized GGUF MiniLM model all-MiniLM-L6-v2-Q4_K_M.
+
+Tests the model locally using the gf library to verify embeddings.
+
+Provides YAML integration example for OpenClaw local memory search.
+
+Model Validation:
+
+Option to validate MiniLM embeddings directly from the terminal.
+
+System Safety & Reporting:
+
+Uses SSH-safe ✅ checkmarks and ❌ crosses for step success/failure reporting.
+
+Generates a /tmp/setup_report.txt summarizing all steps.
+
+Cleanup:
+
+Removes temporary build files, Python source archives, and cleans apt cache.
+
+System helpers are preserved to avoid breaking command-not-found or other essential utilities.
+
+Recommendations:
+
+Designed for Raspberry Pi 4 or similar low-memory ARM boards.
+
+Uses local INT4 quantized GGUF model for efficient CPU inference.
+
+Swap management is recommended for heavy compilation or AI workloads.
+
+Usage:
+
+Run the script via terminal:
+
+sudo bash setup_minilm.sh
+
+Choose from menu options [1–8] to install Python, manage models, validate embeddings, or clean up.
+
+Target Users:
+
+AI hobbyists, developers, and researchers running local inference on Raspberry Pi or Ubuntu ARM boards.
+
+Anyone needing a simple, safe setup of Python + MiniLM GGUF models for local experiments.
